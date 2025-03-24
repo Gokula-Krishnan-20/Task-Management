@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management App</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e0f7fa, #e8f5e9);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 85%; 
+            background: rgba(255, 255, 255, 0.9); 
+            padding: 30px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); 
+            border-radius: 15px; 
+        }
+
+        h2 {
+            text-align: center;
+            color: #2e7d32; 
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        input, select {
+            width: calc(100% - 24px);
+            padding: 14px;
+            margin: 12px 0;
+            border: 1px solid #b2dfdb;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 14px 22px; 
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-weight: 600;
+        }
+
+        .add-btn {
+            background-color: #4caf50;
+            color: white;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+
+        th, td {
+            border: 1px solid #b2dfdb;
+            padding: 14px; 
+            text-align: left;
+        }
+
+        th {
+            background-color: #e8f5e9;
+            color: #33691e; 
+            font-weight: 600;
+        }
+
+        .completed-row {
+            background-color: #c8e6c9; 
+            color: #2e7d32;
+        }
+
+        .actions-cell {
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        .complete-btn { background-color: #66bb6a; color: white; }
+        .edit-btn { background-color: #1e88e5; color: white; }
+        .delete-btn { background-color: #d32f2f; color: white; }
+
+        button:hover {
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+        }
+
+        select {
+            background-color: #f0f4c3;
+        }
+
+        input[type="text"] {
+            background-color: #f0f4c3;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Task Management</h2>
+        <input type="text" id="taskName" placeholder="Task Name">
+        <input type="text" id="taskDescription" placeholder="Task Description">
+        <button onclick="addTask()" class="add-btn">Add Task</button>
+        <h3>Tasks</h3>
+        <select id="filter" onchange="filterTasks()">
+            <option value="all">All</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+        </select>
+        <table id="taskList">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+        function addTask() {
+            let name = document.getElementById('taskName').value;
+            let description = document.getElementById('taskDescription').value;
+            if (!name) {
+                alert('Task name is required!');
+                return;
+            }
+            let task = { name, description, completed: false };
+            tasks.push(task);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskDescription').value = '';
+            displayTasks();
+        }
+
+        function displayTasks() {
+            let taskListBody = document.querySelector('#taskList tbody');
+            taskListBody.innerHTML = '';
+            tasks.forEach((task, index) => {
+                let row = taskListBody.insertRow();
+                if (task.completed) {
+                    row.classList.add('completed-row')
+                }
+                row.innerHTML = `
+                    <td>${task.name}</td>
+                    <td>${task.description}</td>
+                    <td>${task.completed ? 'Completed' : 'Pending'}</td>
+                    <td class="actions-cell">
+                        <button class="complete-btn" onclick="toggleTask(${index})">${task.completed ? 'Undo' : 'Complete'}</button>
+                        <button class="edit-btn" onclick="editTask(${index})">Edit</button>
+                        <button class="delete-btn" onclick="deleteTask(${index})">Delete</button>
+                    </td>
+                `;
+            });
+        }
+
+        function toggleTask(index) {
+            tasks[index].completed = !tasks[index].completed;
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            displayTasks();
+        }
+
+        function editTask(index) {
+            let newName = prompt('Edit Task Name', tasks[index].name);
+            let newDesc = prompt('Edit Task Description', tasks[index].description);
+            if (newName) tasks[index].name = newName;
+            if (newDesc) tasks[index].description = newDesc;
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            displayTasks();
+        }
+
+        function deleteTask(index) {
+            tasks.splice(index, 1);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            displayTasks();
+        }
+
+        function filterTasks() {
+            let filter = document.getElementById('filter').value;
+            let filteredTasks = tasks.filter(task => {
+                if (filter === 'completed') return task.completed;
+                if (filter === 'pending') return !task.completed;
+                return true;
+            });
+            let taskListBody = document.querySelector('#taskList tbody');
+            taskListBody.innerHTML = '';
+            filteredTasks.forEach((task, index) => {
+                let row = taskListBody.insertRow();
+                if (task.completed) {
+                    row.classList.add('completed-row')
+                }
+                row.innerHTML = `
+                    <td>${task.name}</td>
+                    <td>${task.description}</td>
+                    <td>${task.completed ? 'Completed' : 'Pending'}</td>
+                    <td class="actions-cell">
+                        <button class="complete-btn" onclick="toggleTask(${index})">${task.completed ? 'Undo' : 'Complete'}</button>
+                        <button class="edit-btn" onclick="editTask(${index})">Edit</button>
+                        <button class="delete-btn" onclick="deleteTask(${index})">Delete</button>
+                    </td>
+                `;
+            });
+        }
+
+        displayTasks();
+    </script>
+</body>
+</html>
